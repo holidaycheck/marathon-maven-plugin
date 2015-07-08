@@ -41,6 +41,24 @@ Add plugin configuration to your `pom.xml`:
 				<goal>deploy</goal>
 			</goals>
 		</execution>
+                <execution>
+                    <id>apptasks</id>
+                    <phase>pre-integration-test</phase>
+                    <goals>
+                        <goal>apptasks</goal>
+                    </goals>
+                    <configuration>
+                        <propertyPrefix>mesos-</propertyPrefix>
+                        <delay>5</delay>
+                    </configuration>
+                </execution>
+                <execution>
+                    <id>delete</id>
+                    <phase>post-integration-test</phase>
+                    <goals>
+                        <goal>delete</goal>
+                    </goals>
+                </execution>
 	</executions>
 </plugin>
 ```

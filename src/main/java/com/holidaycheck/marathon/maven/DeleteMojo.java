@@ -22,8 +22,9 @@
 package com.holidaycheck.marathon.maven;
 
 import static com.holidaycheck.marathon.maven.Utils.readApp;
-import static com.holidaycheck.marathon.maven.Utils.writeApp;
 
+import mesosphere.marathon.client.Marathon;
+import mesosphere.marathon.client.MarathonClient;
 import mesosphere.marathon.client.model.v2.App;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -33,42 +34,38 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Used to process Marathon config file.
+ * Deletes an instance via Marathon.
  */
-@Mojo(name = "processConfig", defaultPhase = LifecyclePhase.VERIFY)
-public class ProcessConfigMojo extends AbstractMarathonMojo {
+@Mojo(name = "delete", defaultPhase = LifecyclePhase.DEPLOY)
+public class DeleteMojo extends AbstractMarathonMojo {
 
     /**
-     * Path to JSON file to read from when processing Marathon config.
-     * Default is ${basedir}/marathon.json
+     * URL of the marathon host as specified in pom.xml.
      */
-    @Parameter(property = "sourceMarathonConfigFile",
-            defaultValue = "${basedir}/marathon.json")
-    private String sourceMarathonConfigFile;
-
-    /**
-     * Image name as specified in pom.xml.
-     */
-    @Parameter(property = "image", required = true)
-    private String image;
-    
-    /**
-     * ID to use for the Marathon config.
-     */
-    @Parameter(property = "id", required = false)
-    private String id;
+    @Parameter(property = "marathonHost", required = true)
+    private String marathonHost;
 
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        getLog().info("processing Marathon config file from " + sourceMarathonConfigFile
-                + " to " + finalMarathonConfigFile);
-        App app = readApp(sourceMarathonConfigFile);
-        if (id != null) {
-            app.setId(id);
+        final Marathon marathon = MarathonClient.getInstance(marathonHost);
+        final App app = readApp(finalMarathonConfigFile);
+        getLog().info("deleting Marathon instance for " + app.getId());
+        if (appExists(marathon, app.getId())) {
+            getLog().info(app.getId() + " already exists - will be updated");
+            deleteApp(marathon, app);
+        } else {
+            getLog().warn(app.getId() + " does not exist - nothing to delete");
         }
-        app.getContainer().getDocker().setImage(image);
-        writeApp(app, finalMarathonConfigFile);
+    }
+
+    private void deleteApp(Marathon marathon, App app) throws MojoExecutionException {
+        try {
+            marathon.deleteApp(app.getId());
+        } catch (Exception deleteAppException) {
+            throw new MojoExecutionException("Failed to delete Marathon instance "
+                    + marathonHost, deleteAppException);
+        }
     }
 
 }

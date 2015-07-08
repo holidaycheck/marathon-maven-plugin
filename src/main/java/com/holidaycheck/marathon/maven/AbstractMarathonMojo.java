@@ -21,9 +21,13 @@
 
 package com.holidaycheck.marathon.maven;
 
+import mesosphere.marathon.client.Marathon;
+import mesosphere.marathon.client.utils.MarathonException;
+
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecution;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 
 abstract class AbstractMarathonMojo extends AbstractMojo {
@@ -41,4 +45,20 @@ abstract class AbstractMarathonMojo extends AbstractMojo {
     @Parameter(property = "finalMarathonConfigFile",
             defaultValue = "${project.build.directory}/marathon.json")
     protected String finalMarathonConfigFile;
+    
+    protected boolean appExists(Marathon marathon, String appId) throws MojoExecutionException {
+        try {
+            marathon.getApp(appId);
+            return true;
+        } catch (MarathonException getAppException) {
+            if (getAppException.getMessage().contains("404")) {
+                return false;
+            } else {
+                throw new MojoExecutionException("Failed to check if an app " + appId + "exists",
+                        getAppException);
+            }
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to check if an app " + appId + "exists", e);
+        }
+    }
 }
