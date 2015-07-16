@@ -101,7 +101,7 @@
 		<dependency>
 			<groupId>cc.roden</groupId>
 			<artifactId>marathon-client</artifactId>
-			<version>0.4.6</version>
+			<version>0.4.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.maven.plugin-tools</groupId>
@@ -141,7 +141,7 @@
 		<dependency>
 			<groupId>com.squareup.okhttp</groupId>
 			<artifactId>mockwebserver</artifactId>
-			<version>2.3.0</version>
+			<version>2.4.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
