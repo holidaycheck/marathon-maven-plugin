@@ -44,8 +44,7 @@ public class DeployMojo extends AbstractMarathonMojo {
      */
     @Parameter(property = "marathonHost", required = true)
     private String marathonHost;
-
-
+    
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         final Marathon marathon = MarathonClient.getInstance(marathonHost);
@@ -58,22 +57,6 @@ public class DeployMojo extends AbstractMarathonMojo {
         } else {
             getLog().info(app.getId() + " does not exist yet - will be created");
             createApp(marathon, app);
-        }
-    }
-
-    private boolean appExists(Marathon marathon, String appId) throws MojoExecutionException {
-        try {
-            marathon.getApp(appId);
-            return true;
-        } catch (MarathonException getAppException) {
-            if (getAppException.getMessage().contains("404")) {
-                return false;
-            } else {
-                throw new MojoExecutionException("Failed to check if an app " + appId + "exists",
-                        getAppException);
-            }
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to check if an app " + appId + "exists", e);
         }
     }
 
