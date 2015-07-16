@@ -21,7 +21,7 @@ Add plugin configuration to your `pom.xml`:
 <plugin>
 	<groupId>com.holidaycheck</groupId>
 	<artifactId>marathon-maven-plugin</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<configuration>
 		<image>${docker-image-prefix}/${project.build.finalName}:${project.version}-${gitShortCommitId}</image>
 		<marathonHost>http://${mesos.host}:${mesos.port}</marathonHost>
@@ -41,24 +41,24 @@ Add plugin configuration to your `pom.xml`:
 				<goal>deploy</goal>
 			</goals>
 		</execution>
-                <execution>
-                    <id>apptasks</id>
-                    <phase>pre-integration-test</phase>
-                    <goals>
-                        <goal>apptasks</goal>
-                    </goals>
-                    <configuration>
-                        <propertyPrefix>mesos-</propertyPrefix>
-                        <delay>5</delay>
-                    </configuration>
-                </execution>
-                <execution>
-                    <id>delete</id>
-                    <phase>post-integration-test</phase>
-                    <goals>
-                        <goal>delete</goal>
-                    </goals>
-                </execution>
+		<execution>
+			<id>apptasks</id>
+			<phase>pre-integration-test</phase>
+			<goals>
+				<goal>apptasks</goal>
+			</goals>
+			<configuration>
+				<propertyPrefix>mesos-</propertyPrefix>
+				<delay>5</delay>
+			</configuration>
+		</execution>
+		<execution>
+			<id>delete</id>
+			<phase>post-integration-test</phase>
+			<goals>
+				<goal>delete</goal>
+			</goals>
+		</execution>
 	</executions>
 </plugin>
 ```
