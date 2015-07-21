@@ -101,7 +101,7 @@
 		<dependency>
 			<groupId>cc.roden</groupId>
 			<artifactId>marathon-client</artifactId>
-			<version>0.4.8-SNAPSHOT</version>
+			<version>0.4.8</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.maven.plugin-tools</groupId>
