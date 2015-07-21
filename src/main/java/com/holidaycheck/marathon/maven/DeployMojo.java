@@ -113,15 +113,15 @@ public class DeployMojo extends AbstractMarathonMojo {
 
         //loop until we time out.  if we are successful then the loop will exit
         while (new Date().getTime() - start < waitForDeploymentTimeout * 1000) {
-            //TODO(bsneade) - we should probably add a filter on the affected apps here
-            final Collection<String> matchingDeploymentIds = 
+            //get the list of active deployment ids filtered by our app id 
+            final Collection<String> activeDeploymentIds = 
                     Collections2.transform(Collections2.filter(
                             marathon.getDeployments(), new SpecificAppPredicate(app.getId())),
                             new DeploymentIdExtractor());
 
             //match our app's deployment ids against the list of active ones
             //  if none of our ids are in active deployment, then we have started up.
-            if (Collections.disjoint(appDeploymentIds, matchingDeploymentIds)) {
+            if (Collections.disjoint(appDeploymentIds, activeDeploymentIds)) {
                 getLog().info("All deployments are started: " + appDeploymentIds);
                 return;
             }
