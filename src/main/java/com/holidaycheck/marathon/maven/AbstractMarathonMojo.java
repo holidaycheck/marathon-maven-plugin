@@ -45,10 +45,10 @@ abstract class AbstractMarathonMojo extends AbstractMojo {
     @Parameter(property = "finalMarathonConfigFile",
             defaultValue = "${project.build.directory}/marathon.json")
     protected String finalMarathonConfigFile;
-    
+
     protected boolean appExists(Marathon marathon, String appId) throws MojoExecutionException {
         try {
-            marathon.getApp(appId);
+            marathon.getApp(trimLeadingSlash(appId));
             return true;
         } catch (MarathonException getAppException) {
             if (getAppException.getMessage().contains("404")) {
@@ -59,6 +59,14 @@ abstract class AbstractMarathonMojo extends AbstractMojo {
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to check if an app " + appId + "exists", e);
+        }
+    }
+
+    protected String trimLeadingSlash(final String appId) {
+        if (appId != null && appId.startsWith("/")) {
+            return appId.substring(1);
+        } else {
+            return appId;
         }
     }
 }

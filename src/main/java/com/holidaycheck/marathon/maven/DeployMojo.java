@@ -27,6 +27,7 @@ import mesosphere.marathon.client.Marathon;
 import mesosphere.marathon.client.MarathonClient;
 import mesosphere.marathon.client.model.v2.App;
 import mesosphere.marathon.client.model.v2.Deployment;
+import mesosphere.marathon.client.utils.MarathonException;
 
 import javax.annotation.Nonnull;
 
@@ -76,14 +77,19 @@ public class DeployMojo extends AbstractMarathonMojo {
             final App createdApp = createApp(marathon, app);
 
             if (waitForDeploymentFinished) {
-                waitForApp(marathon, createdApp);
+                try {
+                    waitForApp(marathon, createdApp);
+                } catch (MarathonException createAppException) {
+                    throw new MojoExecutionException("Failed to push Marathon config file to "
+                            + marathonHost, createAppException);
+                }
             }
         }
     }
 
     private void updateApp(Marathon marathon, App app) throws MojoExecutionException {
         try {
-            marathon.updateApp(app.getId(), app, true);
+            marathon.updateApp(trimLeadingSlash(app.getId()), app);
         } catch (Exception updateAppException) {
             throw new MojoExecutionException("Failed to update Marathon config file at "
                     + marathonHost, updateAppException);
@@ -102,11 +108,12 @@ public class DeployMojo extends AbstractMarathonMojo {
     /**
      * Get the marathon deployments in a loop until we find our deployment is
      * completed or we have a timeout.
+     * @throws MarathonException 
      */
-    private void waitForApp(Marathon marathon, App app) {
+    private void waitForApp(Marathon marathon, App app) throws MarathonException {
         //transform our app deployments into a collection of ids
         final Collection<String> appDeploymentIds = Collections2.transform(
-                app.getDeployments(), new DeploymentIdExtractor());
+                app.getDeployments(), new AppDeploymentIdExtractor());
 
         //capture our start time
         final long start = new Date().getTime();
@@ -131,6 +138,13 @@ public class DeployMojo extends AbstractMarathonMojo {
 
         //we normally exited the while loop, so we have a timeout.
         getLog().warn("Timeout waiting for deployment: " + appDeploymentIds);
+    }
+    
+    private static class AppDeploymentIdExtractor implements Function<App.Deployment, String> {
+        @Override
+        public String apply(@Nonnull final App.Deployment input) {
+            return input.getId();
+        }
     }
 
     private static class DeploymentIdExtractor implements Function<Deployment, String> {
