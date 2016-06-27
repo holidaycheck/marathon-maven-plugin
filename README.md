@@ -40,6 +40,10 @@ Add plugin configuration to your `pom.xml`:
 			<goals>
 				<goal>deploy</goal>
 			</goals>
+                        <configuration>
+                                <waitForDeploymentFinished>true</waitForDeploymentFinished>
+                                <waitForDeploymentTimeout>10<waitForDeploymentTimeout>
+                        </configuration>
 		</execution>
 		<execution>
 			<id>apptasks</id>
@@ -49,7 +53,6 @@ Add plugin configuration to your `pom.xml`:
 			</goals>
 			<configuration>
 				<propertyPrefix>mesos-</propertyPrefix>
-				<delay>5</delay>
 			</configuration>
 		</execution>
 		<execution>

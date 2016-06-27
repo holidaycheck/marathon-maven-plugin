@@ -30,7 +30,11 @@ import mesosphere.marathon.client.model.v2.App;
 import mesosphere.marathon.client.utils.MarathonException;
 import mesosphere.marathon.client.utils.ModelUtils;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.maven.plugin.MojoExecutionException;
+
 import org.codehaus.plexus.configuration.DefaultPlexusConfiguration;
 import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.junit.Rule;
@@ -190,6 +194,90 @@ public class DeployMojoTest extends AbstractMarathonMojoTestWithJUnit4 {
         RecordedRequest updateAppRequest = server.takeRequest();
         assertEquals(MARATHON_PATH + APP_ID + "?force=true", updateAppRequest.getPath());
         assertEquals("PUT", updateAppRequest.getMethod());
+    }
+    
+    @Test
+    public void testDeployWithWait() throws Exception {
+        final UUID deploymentId = UUID.randomUUID();
+        
+        server.enqueue(new MockResponse().setResponseCode(404)); //does the app exist
+        server.enqueue(new MockResponse().setResponseCode(200)
+            .setBody("{ \"id\": \"" + APP_ID + "\", \"deployments\": [ { \"id\": \"" + deploymentId + "\" } ] }")); //create the app
+        server.enqueue(new MockResponse().setResponseCode(200)
+                .setBody("[ { \"affectedApps\": [ \"" + APP_ID + "\" ], \"id\": \"" + deploymentId + "\" } ]")); //get the current deployments containing ids
+        server.enqueue(new MockResponse().setResponseCode(200)
+                .setBody("[]")); //get the current deployments excluding ids
+
+        final PlexusConfiguration pluginCfg = new DefaultPlexusConfiguration("configuration");
+        pluginCfg.addChild("marathonHost", getMarathonHost());
+        pluginCfg.addChild("finalMarathonConfigFile", getTestMarathonConfigFile());
+        pluginCfg.addChild("waitForDeploymentFinished", "true");
+        final DeployMojo mojo = (DeployMojo) lookupMarathonMojo("deploy", pluginCfg);
+        assertNotNull(mojo);
+
+        mojo.execute();
+
+        assertEquals(4, server.getRequestCount());
+
+        RecordedRequest getAppRequest = server.takeRequest();
+        assertEquals(MARATHON_PATH + APP_ID, getAppRequest.getPath());
+        assertEquals("GET", getAppRequest.getMethod());
+
+        RecordedRequest createAppRequest = server.takeRequest();
+        assertEquals(MARATHON_PATH, createAppRequest.getPath());
+        assertEquals("POST", createAppRequest.getMethod());
+        App requestApp = ModelUtils.GSON.fromJson(createAppRequest.getBody().readUtf8(), App.class);
+        assertNotNull(requestApp);
+        assertEquals(APP_ID, requestApp.getId());
+        
+        RecordedRequest getDeploymentsRequest1 = server.takeRequest();
+        assertEquals("/v2/deployments", getDeploymentsRequest1.getPath());
+        assertEquals("GET", getDeploymentsRequest1.getMethod());
+        
+        RecordedRequest getDeploymentsRequest2 = server.takeRequest();
+        assertEquals("/v2/deployments", getDeploymentsRequest2.getPath());
+        assertEquals("GET", getDeploymentsRequest2.getMethod());
+    }
+    
+    @Test
+    public void testDeployWithTimeout() throws Exception {
+        final UUID deploymentId = UUID.randomUUID();
+        
+        server.enqueue(new MockResponse().setResponseCode(404)); //does the app exist
+        server.enqueue(new MockResponse().setResponseCode(200)
+            .setBody("{ \"id\": \"" + APP_ID + "\", \"deployments\": [ { \"id\": \"" + deploymentId + "\" } ] }")); //create the app
+        final String deploymentsBody = "[ { \"affectedApps\": [ \"" + APP_ID 
+                + "\" ], \"id\": \"" + deploymentId + "\" } ]";
+        server.enqueue(new MockResponse().setResponseCode(200)
+                .setBodyDelay(2, TimeUnit.SECONDS) //take two seconds for the response
+                .setBody(deploymentsBody)); //get the current deployments containing ids
+
+        final PlexusConfiguration pluginCfg = new DefaultPlexusConfiguration("configuration");
+        pluginCfg.addChild("marathonHost", getMarathonHost());
+        pluginCfg.addChild("finalMarathonConfigFile", getTestMarathonConfigFile());
+        pluginCfg.addChild("waitForDeploymentFinished", "true");
+        pluginCfg.addChild("waitForDeploymentTimeout", "1");
+        final DeployMojo mojo = (DeployMojo) lookupMarathonMojo("deploy", pluginCfg);
+        assertNotNull(mojo);
+
+        mojo.execute();
+
+        assertEquals(3, server.getRequestCount());
+
+        RecordedRequest getAppRequest = server.takeRequest();
+        assertEquals(MARATHON_PATH + APP_ID, getAppRequest.getPath());
+        assertEquals("GET", getAppRequest.getMethod());
+
+        RecordedRequest createAppRequest = server.takeRequest();
+        assertEquals(MARATHON_PATH, createAppRequest.getPath());
+        assertEquals("POST", createAppRequest.getMethod());
+        App requestApp = ModelUtils.GSON.fromJson(createAppRequest.getBody().readUtf8(), App.class);
+        assertNotNull(requestApp);
+        assertEquals(APP_ID, requestApp.getId());
+        
+        RecordedRequest getDeploymentsRequest1 = server.takeRequest();
+        assertEquals("/v2/deployments", getDeploymentsRequest1.getPath());
+        assertEquals("GET", getDeploymentsRequest1.getMethod());
     }
 
 }
