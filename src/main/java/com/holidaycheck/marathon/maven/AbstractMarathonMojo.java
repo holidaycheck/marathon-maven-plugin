@@ -51,7 +51,7 @@ abstract class AbstractMarathonMojo extends AbstractMojo {
             marathon.getApp(appId);
             return true;
         } catch (MarathonException getAppException) {
-            if (getAppException.getMessage().contains("404")) {
+            if (getAppException.getStatus() == 404) {
                 return false;
             } else {
                 throw new MojoExecutionException("Failed to check if an app " + appId + "exists",
