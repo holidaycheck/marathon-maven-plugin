@@ -22,42 +22,39 @@
 package com.holidaycheck.marathon.maven;
 
 
-import static org.hamcrest.CoreMatchers.isA;
-
-import java.io.FileNotFoundException;
-
+import com.squareup.okhttp.mockwebserver.MockResponse;
+import com.squareup.okhttp.mockwebserver.MockWebServer;
+import com.squareup.okhttp.mockwebserver.RecordedRequest;
 import mesosphere.marathon.client.model.v2.App;
 import mesosphere.marathon.client.utils.MarathonException;
 import mesosphere.marathon.client.utils.ModelUtils;
-
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
-
 import org.codehaus.plexus.configuration.DefaultPlexusConfiguration;
 import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.squareup.okhttp.mockwebserver.MockResponse;
-import com.squareup.okhttp.mockwebserver.RecordedRequest;
-import com.squareup.okhttp.mockwebserver.rule.MockWebServerRule;
+import java.io.FileNotFoundException;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 
 public class DeployMojoTest extends AbstractMarathonMojoTestWithJUnit4 {
 
-    public static final String APP_ID = "/example-1";
-    public static final String MARATHON_PATH = "/v2/apps";
+    private static final String APP_ID = "/example-1";
+    private static final String MARATHON_PATH = "/v2/apps";
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
     @Rule
-    public final MockWebServerRule server = new MockWebServerRule();
+    public final MockWebServer server = new MockWebServer();
 
     private String getMarathonHost() {
-        return server.getUrl("").toString();
+        return StringUtils.removeEnd(server.url("").toString(), "/");
     }
 
     private DeployMojo lookupDeployMojo(String marathonFile) throws Exception {

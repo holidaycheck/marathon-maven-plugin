@@ -21,19 +21,11 @@
 
 package com.holidaycheck.marathon.maven;
 
-import static com.holidaycheck.marathon.maven.Utils.readApp;
-
 import mesosphere.marathon.client.Marathon;
 import mesosphere.marathon.client.MarathonClient;
 import mesosphere.marathon.client.model.v2.App;
 import mesosphere.marathon.client.model.v2.GetAppTasksResponse;
 import mesosphere.marathon.client.model.v2.Task;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -41,6 +33,13 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static com.holidaycheck.marathon.maven.Utils.readApp;
 
 /**
  * Sets maven parameters based on the app tasks.
@@ -71,10 +70,10 @@ public class AppTasksMojo extends AbstractMarathonMojo {
     private String propertyPrefix;
 
     /**
-     * Delay for N seconds before requesting tasks.  This is important because it could
+     * Delay for N seconds before requesting tasks. This is important because it could
      * take a while for your service to be provisioned and return something meaningful.
      */
-    @Parameter(property = "delay", required = false)
+    @Parameter(property = "delay")
     private long delay = 0;
 
     @Component
@@ -86,28 +85,25 @@ public class AppTasksMojo extends AbstractMarathonMojo {
         final App app = readApp(finalMarathonConfigFile);
         getLog().info("tasks in Marathon instance for " + app.getId());
 
-        final ScheduledThreadPoolExecutor executor
-                = new ScheduledThreadPoolExecutor(1);
-        final Callable<Void> callable = new Callable<Void>() {
-            @Override
-            public Void call() {
-                try {
-                    if (appExists(marathon, app.getId())) {
-                        getLog().info(app.getId() + " exists - getting app tasks");
-                        getAppTasks(marathon, app);
-                    } else {
-                        getLog().warn(app.getId() + " does not exist");
-                    }
-                    return null;
-                } catch (final MojoExecutionException e) {
-                    getLog().error("Problem communicating with Marathon", e);
+        final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+        final Callable<Void> callable = () -> {
+            try {
+                if (appExists(marathon, app.getId())) {
+                    getLog().info(app.getId() + " exists - getting app tasks");
+                    getAppTasks(marathon, app);
+                } else {
+                    getLog().warn(app.getId() + " does not exist");
                 }
-                return null;
+            } catch (final MojoExecutionException e) {
+                getLog().error("Problem communicating with Marathon", e);
             }
+            return null;
         };
         final ScheduledFuture<Void> future = executor.schedule(callable, delay, TimeUnit.SECONDS);
         while (!future.isDone() && !future.isCancelled()) {
-            //do nothing
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ignored) { }
         }
     }
 
