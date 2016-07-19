@@ -40,10 +40,10 @@ Add plugin configuration to your `pom.xml`:
 			<goals>
 				<goal>deploy</goal>
 			</goals>
-                        <configuration>
-                                <waitForDeploymentFinished>true</waitForDeploymentFinished>
-                                <waitForDeploymentTimeout>10<waitForDeploymentTimeout>
-                        </configuration>
+            <configuration>
+                    <waitForDeploymentFinished>true</waitForDeploymentFinished>
+                    <waitForDeploymentTimeout>10</waitForDeploymentTimeout>
+            </configuration>
 		</execution>
 		<execution>
 			<id>apptasks</id>

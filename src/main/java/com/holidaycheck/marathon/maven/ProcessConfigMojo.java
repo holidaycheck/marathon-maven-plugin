@@ -55,7 +55,7 @@ public class ProcessConfigMojo extends AbstractMarathonMojo {
     /**
      * ID to use for the Marathon config.
      */
-    @Parameter(property = "id", required = false)
+    @Parameter(property = "id")
     private String id;
 
 

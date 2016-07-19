@@ -45,7 +45,7 @@ public class Utils {
     private Utils() {
     }
 
-    public static final App readApp(String file) throws MojoExecutionException {
+    public static App readApp(String file) throws MojoExecutionException {
         try (Reader reader = new InputStreamReader(new FileInputStream(new File(file)),
                 Charsets.UTF_8)) {
             return ModelUtils.GSON.fromJson(reader, App.class);
@@ -58,7 +58,7 @@ public class Utils {
         }
     }
 
-    public static final void writeApp(App app, String file) throws MojoExecutionException {
+    public static void writeApp(App app, String file) throws MojoExecutionException {
         try (Writer writer = new OutputStreamWriter(new FileOutputStream(new File(file)),
                 Charsets.UTF_8)) {
             ModelUtils.GSON.toJson(app, writer);

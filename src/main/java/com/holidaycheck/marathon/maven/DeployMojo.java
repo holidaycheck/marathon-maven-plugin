@@ -21,29 +21,28 @@
 
 package com.holidaycheck.marathon.maven;
 
-import static com.holidaycheck.marathon.maven.Utils.readApp;
-
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import mesosphere.marathon.client.Marathon;
 import mesosphere.marathon.client.MarathonClient;
 import mesosphere.marathon.client.model.v2.App;
 import mesosphere.marathon.client.model.v2.Deployment;
 import mesosphere.marathon.client.utils.MarathonException;
 
-import javax.annotation.Nonnull;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+
+import javax.annotation.Nonnull;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+
+import static com.holidaycheck.marathon.maven.Utils.readApp;
 
 /**
  * Deploys via Marathon by sending config.
@@ -57,16 +56,16 @@ public class DeployMojo extends AbstractMarathonMojo {
     @Parameter(property = "marathonHost", required = true)
     private String marathonHost;
 
-    @Parameter(property = "waitForDeploymentFinished", required = false)
+    @Parameter(property = "waitForDeploymentFinished")
     private boolean waitForDeploymentFinished = false;
 
-    @Parameter(property = "waitForDeploymentTimeout", required = false)
+    @Parameter(property = "waitForDeploymentTimeout")
     private Long waitForDeploymentTimeout = 10L;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         final Marathon marathon = MarathonClient.getInstance(marathonHost);
-        final App app = readApp(finalMarathonConfigFile);
+        App app = readApp(finalMarathonConfigFile);
         getLog().info("deploying Marathon config for " + app.getId()
                 + " from " + finalMarathonConfigFile + " to " + marathonHost);
         if (appExists(marathon, app.getId())) {
@@ -74,15 +73,14 @@ public class DeployMojo extends AbstractMarathonMojo {
             updateApp(marathon, app);
         } else {
             getLog().info(app.getId() + " does not exist yet - will be created");
-            final App createdApp = createApp(marathon, app);
+            app = createApp(marathon, app);
+        }
 
-            if (waitForDeploymentFinished) {
-                try {
-                    waitForApp(marathon, createdApp);
-                } catch (MarathonException createAppException) {
-                    throw new MojoExecutionException("Failed to push Marathon config file to "
-                            + marathonHost, createAppException);
-                }
+        if (waitForDeploymentFinished) {
+            try {
+                waitForApp(marathon, app);
+            } catch (MarathonException e) {
+                throw new MojoExecutionException("error waiting for app", e);
             }
         }
     }
@@ -116,15 +114,18 @@ public class DeployMojo extends AbstractMarathonMojo {
                 app.getDeployments(), new AppDeploymentIdExtractor());
 
         //capture our start time
-        final long start = new Date().getTime();
+        final Instant startInstant = Instant.now();
+        final Duration waitDuration = Duration.ofSeconds(waitForDeploymentTimeout);
 
         //loop until we time out.  if we are successful then the loop will exit
-        while (new Date().getTime() - start < waitForDeploymentTimeout * 1000) {
+        while (Duration.between(startInstant, Instant.now()).compareTo(waitDuration) < 0) {
             //get the list of active deployment ids filtered by our app id 
             final Collection<String> activeDeploymentIds = 
                     Collections2.transform(Collections2.filter(
-                            marathon.getDeployments(), new SpecificAppPredicate(app.getId())),
-                            new DeploymentIdExtractor());
+                            marathon.getDeployments(),
+                            new SpecificAppPredicate(app.getId())),
+                            new DeploymentIdExtractor()
+                    );
 
             //match our app's deployment ids against the list of active ones
             //  if none of our ids are in active deployment, then we have started up.
@@ -134,6 +135,10 @@ public class DeployMojo extends AbstractMarathonMojo {
             }
             
             getLog().debug("Deployment still found for at least one deployment id");
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {}
         }
 
         //we normally exited the while loop, so we have a timeout.
@@ -158,7 +163,7 @@ public class DeployMojo extends AbstractMarathonMojo {
         
         final String appId;
 
-        public SpecificAppPredicate(final String appId) {
+        SpecificAppPredicate(final String appId) {
             this.appId = appId;
         }
 
