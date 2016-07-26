@@ -99,9 +99,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>cc.roden</groupId>
+			<groupId>com.mesosphere</groupId>
 			<artifactId>marathon-client</artifactId>
-			<version>0.4.9</version>
+			<version>0.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.maven.plugin-tools</groupId>
