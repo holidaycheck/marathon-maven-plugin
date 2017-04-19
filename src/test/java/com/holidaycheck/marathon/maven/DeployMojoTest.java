@@ -109,7 +109,7 @@ public class DeployMojoTest extends AbstractMarathonMojoTestWithJUnit4 {
         assertEquals("GET", getAppRequest.getMethod());
 
         RecordedRequest updateAppRequest = server.takeRequest();
-        assertEquals(MARATHON_PATH + APP_ID, updateAppRequest.getPath());
+        assertEquals(MARATHON_PATH + APP_ID+ "?force=false", updateAppRequest.getPath());
         assertEquals("PUT", updateAppRequest.getMethod());
         App requestApp = ModelUtils.GSON.fromJson(updateAppRequest.getBody().readUtf8(), App.class);
         assertNotNull(requestApp);
