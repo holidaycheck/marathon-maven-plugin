@@ -87,7 +87,7 @@ public class DeployMojo extends AbstractMarathonMojo {
 
     private void updateApp(Marathon marathon, App app) throws MojoExecutionException {
         try {
-            marathon.updateApp(trimLeadingSlash(app.getId()), app);
+            marathon.updateApp(trimLeadingSlash(app.getId()), app, false);
         } catch (Exception updateAppException) {
             throw new MojoExecutionException("Failed to update Marathon config file at "
                     + marathonHost, updateAppException);
